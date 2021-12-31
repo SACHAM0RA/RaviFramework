@@ -9,6 +9,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from networkx import DiGraph
 
+
 NULL_STRING: string = "NULL"
 CLASS_TYPE: string = "class_type"
 DEFAULT_VALUE: string = "default_value"
