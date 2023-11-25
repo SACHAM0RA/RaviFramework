@@ -1,0 +1,180 @@
+{
+    "constants": {
+        "0": {
+            "name": "wood_from_every_tree",
+            "value": "7"
+        },
+        "1": {
+            "name": "metal_from_every_mine",
+            "value": "5"
+        },
+        "2": {
+            "name": "wood_for_bow",
+            "value": "2"
+        },
+        "3": {
+            "name": "metal_for_bow",
+            "value": "1"
+        },
+        "4": {
+            "name": "wood_for_sword",
+            "value": "1"
+        },
+        "5": {
+            "name": "metal_for_sword",
+            "value": "2"
+        },
+        "6": {
+            "name": "tree_cutting_duration",
+            "value": "1"
+        },
+        "7": {
+            "name": "mine_digging_duration",
+            "value": "1"
+        },
+        "8": {
+            "name": "bow_making_duration",
+            "value": "1"
+        },
+        "9": {
+            "name": "sword_making_duration",
+            "value": "1"
+        }
+    },
+    "value_sets": {},
+    "classes": {
+        "0": {
+            "name": "class_player",
+            "parent": "",
+            "imp": "\"WOOD\":int=0\n\"METAL\":int=0\n\"BOW\":int=0\n\"SWORD\":int=0"
+        },
+        "1": {
+            "name": "class_world",
+            "parent": "",
+            "imp": "\"TREE\":int=6\n\"MINE\":int=4\n\"REMAINING_DAYS\":int=5"
+        }
+    },
+    "context_entities": {
+        "0": {
+            "name": "\"PLAYER\"",
+            "value": "class_player"
+        },
+        "1": {
+            "name": "\"WORLD\"",
+            "value": "class_world"
+        }
+    },
+    "filters": {
+        "0": {
+            "name": "can_cut_tree",
+            "imp": "s.getValue(\"WORLD\", \"TREE\") > 0 and \\\ns.getValue(\"WORLD\", \"REMAINING_DAYS\") >= tree_cutting_duration"
+        },
+        "1": {
+            "name": "can_dig_mine",
+            "imp": "s.getValue(\"WORLD\", \"MINE\") > 0 and \\\ns.getValue(\"WORLD\", \"REMAINING_DAYS\") >= mine_digging_duration"
+        },
+        "2": {
+            "name": "can_make_bow",
+            "imp": "s.getValue(\"PLAYER\", \"WOOD\") >= wood_for_bow and \\\ns.getValue(\"PLAYER\", \"METAL\") >= metal_for_bow and \\\ns.getValue(\"WORLD\", \"REMAINING_DAYS\") >= bow_making_duration"
+        },
+        "3": {
+            "name": "can_make_sword",
+            "imp": "s.getValue(\"PLAYER\", \"WOOD\") >= wood_for_sword and \\\ns.getValue(\"PLAYER\", \"METAL\") >= metal_for_sword and \\\ns.getValue(\"WORLD\", \"REMAINING_DAYS\") >= sword_making_duration"
+        },
+        "4": {
+            "name": "failCondition",
+            "imp": "s.getValue(\"WORLD\", \"REMAINING_DAYS\") == 0"
+        },
+        "5": {
+            "name": "successCondition",
+            "imp": "s.getValue(\"PLAYER\", \"BOW\") >= 1 and \\\ns.getValue(\"PLAYER\", \"SWORD\") >= 1"
+        }
+    },
+    "transforms": {
+        "0": {
+            "name": "cut_tree",
+            "imp": "newValue = s.getValue(\"PLAYER\", \"WOOD\") + wood_from_every_tree\ns.setValue(\"PLAYER\", \"WOOD\", newValue)\nnewValue = s.getValue(\"WORLD\", \"REMAINING_DAYS\") - tree_cutting_duration\ns.setValue(\"WORLD\", \"REMAINING_DAYS\", newValue)"
+        },
+        "1": {
+            "name": "dig_mine",
+            "imp": "newValue = s.getValue(\"PLAYER\", \"METAL\") + metal_from_every_mine\ns.setValue(\"PLAYER\", \"METAL\", newValue)\nnewValue = s.getValue(\"WORLD\", \"REMAINING_DAYS\") - mine_digging_duration\ns.setValue(\"WORLD\", \"REMAINING_DAYS\", newValue)"
+        },
+        "2": {
+            "name": "make_bow",
+            "imp": "newValue = s.getValue(\"PLAYER\", \"WOOD\") - wood_for_bow\ns.setValue(\"PLAYER\", \"WOOD\", newValue)\nnewValue = s.getValue(\"PLAYER\", \"METAL\") - metal_for_bow\ns.setValue(\"PLAYER\", \"METAL\", newValue)\n\nnewValue = s.getValue(\"PLAYER\", \"BOW\") + 1\ns.setValue(\"PLAYER\", \"BOW\", newValue)\n\nnewValue = s.getValue(\"WORLD\", \"REMAINING_DAYS\") - bow_making_duration\ns.setValue(\"WORLD\", \"REMAINING_DAYS\", newValue)"
+        },
+        "3": {
+            "name": "make_sword",
+            "imp": "newValue = s.getValue(\"PLAYER\", \"WOOD\") - wood_for_sword\ns.setValue(\"PLAYER\", \"WOOD\", newValue)\nnewValue = s.getValue(\"PLAYER\", \"METAL\") - metal_for_sword\ns.setValue(\"PLAYER\", \"METAL\", newValue)\nnewValue = s.getValue(\"PLAYER\", \"SWORD\") + 1\ns.setValue(\"PLAYER\", \"SWORD\", newValue)\nnewValue = s.getValue(\"WORLD\", \"REMAINING_DAYS\") - sword_making_duration\ns.setValue(\"WORLD\", \"REMAINING_DAYS\", newValue)"
+        }
+    },
+    "choice_def": {
+        "0": {
+            "name": "ch_cut_tree",
+            "filter": "can_cut_tree",
+            "transform": "cut_tree",
+            "friendlyName": "\"CUT A TREE TO GET +%d WOOD (%d DAYS)\" % (wood_from_every_tree, tree_cutting_duration)"
+        },
+        "1": {
+            "name": "ch_dig_mine",
+            "filter": "can_dig_mine",
+            "transform": "dig_mine",
+            "friendlyName": "\"DIG A MINE TO GET +%d METAL (%d DAYS)\" % (metal_from_every_mine, mine_digging_duration)"
+        },
+        "2": {
+            "name": "ch_make_bow",
+            "filter": "can_make_bow",
+            "transform": "make_bow",
+            "friendlyName": "\"SPEND %d WOOD and %d METAL TO MAKE A BOW (%d DAYS)\" % (wood_for_bow, metal_for_bow, bow_making_duration)"
+        },
+        "3": {
+            "name": "ch_make_sword",
+            "filter": "can_make_sword",
+            "transform": "make_sword",
+            "friendlyName": "\"SPEND %d WOOD and %d METAL TO MAKE A SWORD (%d DAYS)\" % (wood_for_sword, metal_for_sword, sword_making_duration)"
+        }
+    },
+    "terminations": {
+        "0": {
+            "value": "failCondition"
+        },
+        "1": {
+            "value": "successCondition"
+        }
+    },
+    "model_choices": {
+        "0": {
+            "value": "ch_cut_tree"
+        },
+        "1": {
+            "value": "ch_dig_mine"
+        },
+        "2": {
+            "value": "ch_make_bow"
+        },
+        "3": {
+            "value": "ch_make_sword"
+        }
+    },
+    "assertions": {
+        "0": {
+            "name": "Number of WOOD should never become negative",
+            "imp": "lambda model: \nlen(filterStates(lambda s: s.getValue(\"PLAYER\", \"WOOD\") < 0,\n                 statesOf(model)))\n==0"
+        },
+        "1": {
+            "name": "Number of METAL should never become negative",
+            "imp": "lambda model: \nlen(filterStates(lambda s: s.getValue(\"PLAYER\", \"METAL\") < 0,\n                 statesOf(model)))\n== 0"
+        },
+        "2": {
+            "name": "5 percent < success ratio < 8 percent",
+            "imp": "lambda model: 0.05 < calculate_success_Ratio(model) < 0.08"
+        }
+    },
+    "queries": {
+        "0": {
+            "name": "calculate_success_Ratio",
+            "imp": "successPathCount = \\\nlen(pathsFromTo(model,\n                model.initialStates,\n                filterStates(successCondition, \n                             statesOf(model))))\n\nfailPathCount = \\\nlen(pathsFromTo(model,\n                model.initialStates,\n                filterStates(failCondition,\n                             statesOf(model))))",
+            "ret": "successPathCount/(successPathCount+failPathCount)"
+        }
+    }
+}

@@ -381,7 +381,7 @@ assert_6 = NarrativeAssertion(
 
 
 initial_states = {NarrativeState(fantasyWorldContext)}
-end_conditions = {TerminationCondition}
+term_conditions = {TerminationCondition}
 choices = \
     [
         choice_negotiate_guard, choice_fight_guard, choice_go_city, choice_go_jungle, choice_go_prison,
@@ -392,15 +392,14 @@ choices = \
 assertions = [assert_1, assert_2, assert_3, assert_4, assert_5, assert_6]
 
 settings: NarrationSetting = NarrationSetting(initial_states=initial_states,
-                                              termination_conditions=end_conditions,
-                                              choices=choices,
-                                              assertions=assertions)
+                                              termination_conditions=term_conditions,
+                                              choices=choices)
 
 # ======================================== Narration Generation and Proof Checking =====================================
 
 model: NarrativeModel = generateNarrativeModel(setting=settings)
 
-model.validateAssertions()
+model.validateAssertions(assertions=assertions)
 print("TERMINABLE:", model.hasAbsoluteTermination())
 model.runNarration(False, initial_world_state=NarrativeState(fantasyWorldContext))
 #model.drawNarrationGraph(show_state=False, show_choices=True)

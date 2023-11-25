@@ -1,29 +1,27 @@
 from enum import *
 from ravi.Ravi import *
-
+from ravi.Ravi import choicesOf
 
 # ======================================================= Context ======================================================
 
-class organization(Enum):
-    none = 1
-    order = 2
-    army = 3
-    clan = 4
+org_none = 1
+org_order = 2
+org_army = 3
+org_clan = 4
 
-class world_status(Enum):
-    anarchy = 1
-    tyranny = 2
-    freedom = 3
-    none = 4
+status_anarchy = 1
+status_tyranny = 2
+status_freedom = 3
+status_none = 4
 
 class_character = EntityClass()
 class_character.addProperty("IS_ALIVE", bool, True)
 
 class_player = inherit_from(class_character)
-class_player.addProperty("ALLIANCE", organization, organization.none)
+class_player.addProperty("ALLIANCE", int, org_none)
 
 class_world = EntityClass()
-class_world.addProperty("STATUS", world_status, world_status.none)
+class_world.addProperty("STATUS", int, status_none)
 
 context = NarrativeContext()
 context.addEntity("PLAYER", class_player)
@@ -36,32 +34,39 @@ context.addEntity("WORLD", class_world)
 
 
 def no_alliance(s: NarrativeState) -> bool:
-    return s.getValue("PLAYER", "ALLIANCE") == organization.none
+    return s.getValue("PLAYER", "ALLIANCE") == org_none
+
 
 def member_of_army(s: NarrativeState) -> bool:
-    return s.getValue("PLAYER", "ALLIANCE") == organization.army
+    return s.getValue("PLAYER", "ALLIANCE") == org_army
+
 
 def member_of_clan(s: NarrativeState) -> bool:
-    return s.getValue("PLAYER", "ALLIANCE") == organization.clan
+    return s.getValue("PLAYER", "ALLIANCE") == org_clan
+
 
 def can_fight_army(s: NarrativeState) -> bool:
-    return s.getValue("PLAYER", "ALLIANCE") in {organization.order, organization.clan} and \
+    return s.getValue("PLAYER", "ALLIANCE") in {org_order, org_clan} and \
            s.getValue("GENERAL", "IS_ALIVE")
 
+
 def can_fight_clan(s: NarrativeState) -> bool:
-    return s.getValue("PLAYER", "ALLIANCE") in {organization.order, organization.army} and \
+    return s.getValue("PLAYER", "ALLIANCE") in {org_order, org_army} and \
            s.getValue("PRECEPTOR", "IS_ALIVE")
 
+
 def is_anarchy_possible(s: NarrativeState) -> bool:
-    return s.getValue("PLAYER", "ALLIANCE") in {organization.order, organization.clan} and \
+    return s.getValue("PLAYER", "ALLIANCE") in {org_order, org_clan} and \
            not s.getValue("GENERAL", "IS_ALIVE")
 
+
 def is_tyranny_possible(s: NarrativeState) -> bool:
-    return s.getValue("PLAYER", "ALLIANCE") in {organization.order, organization.army} and \
+    return s.getValue("PLAYER", "ALLIANCE") in {org_order, org_army} and \
            not s.getValue("PRECEPTOR", "IS_ALIVE")
 
+
 def is_freedom_possible(s: NarrativeState) -> bool:
-    return s.getValue("PLAYER", "ALLIANCE") == organization.order and \
+    return s.getValue("PLAYER", "ALLIANCE") == org_order and \
            not s.getValue("PRECEPTOR", "IS_ALIVE") and \
            not s.getValue("GENERAL", "IS_ALIVE")
 
@@ -70,35 +75,42 @@ def is_freedom_possible(s: NarrativeState) -> bool:
 
 
 def join_army(s: NarrativeState) -> NarrativeState:
-    s.setValue("PLAYER", "ALLIANCE", organization.army)
+    s.setValue("PLAYER", "ALLIANCE", org_army)
     return s
+
 
 def join_clan(s: NarrativeState) -> NarrativeState:
-    s.setValue("PLAYER", "ALLIANCE", organization.clan)
+    s.setValue("PLAYER", "ALLIANCE", org_clan)
     return s
 
+
 def establish_order(s: NarrativeState) -> NarrativeState:
-    s.setValue("PLAYER", "ALLIANCE", organization.order)
+    s.setValue("PLAYER", "ALLIANCE", org_order)
     return s
+
 
 def defeat_general(s: NarrativeState) -> NarrativeState:
     s.setValue("GENERAL", "IS_ALIVE", False)
     return s
 
+
 def defeat_preceptor(s: NarrativeState) -> NarrativeState:
     s.setValue("PRECEPTOR", "IS_ALIVE", False)
     return s
 
+
 def make_anarchy(s: NarrativeState) -> NarrativeState:
-    s.setValue("WORLD", "STATUS", world_status.anarchy)
+    s.setValue("WORLD", "STATUS", status_anarchy)
     return s
+
 
 def make_tyranny(s: NarrativeState) -> NarrativeState:
-    s.setValue("WORLD", "STATUS", world_status.tyranny)
+    s.setValue("WORLD", "STATUS", status_tyranny)
     return s
 
+
 def make_democracy(s: NarrativeState) -> NarrativeState:
-    s.setValue("WORLD", "STATUS", world_status.freedom)
+    s.setValue("WORLD", "STATUS", status_freedom)
     return s
 
 
@@ -138,15 +150,15 @@ assertion_1 = NarrativeAssertion(
     "Possible to defeat the general even if the player chose to join the army at first",
     lambda model:
     choice_defeat_general in choicesOf(
-                subModelFrom(
-                    postStatesOf(
-                        filterEventsByChoice(
-                            {choice_join_army},
-                            eventsIn(model)
-                        )
-                    ),
-                    model
+        subModelFrom(
+            postStatesOf(
+                filterEventsByChoice(
+                    {choice_join_army},
+                    eventsIn(model)
                 )
+            ),
+            model
+        )
     )
 )
 
@@ -155,7 +167,7 @@ assertion_2 = NarrativeAssertion(
     lambda model:
     len(
         filterStates(
-            lambda s: s.getValue("WORLD", "STATUS") == world_status.anarchy,
+            lambda s: s.getValue("WORLD", "STATUS") == status_anarchy,
             statesOf(
                 subModelFrom(
                     postStatesOf(
@@ -176,7 +188,7 @@ assertion_3 = NarrativeAssertion(
     lambda model:
     len(
         filterStates(
-            lambda s: s.getValue("PLAYER", "ALLIANCE") == organization.army,
+            lambda s: s.getValue("PLAYER", "ALLIANCE") == org_army,
             statesOf(
                 preStatesOf(
                     filterEventsByChoice(
@@ -194,7 +206,7 @@ assertion_3 = NarrativeAssertion(
 
 
 def terminationCondition(s: NarrativeState) -> bool:
-    return s.getValue("WORLD", "STATUS") != world_status.none
+    return s.getValue("WORLD", "STATUS") != status_none
 
 
 # ================================================== Narration Setting =================================================
@@ -218,7 +230,7 @@ model: NarrativeModel = generateNarrativeModel(setting=settings)
 
 # ======================================== Narration Generation and Proof Checking =====================================
 
-#model.validateAssertions(assertions=assertions)
-#print("TERMINABLE:", model.hasAbsoluteTermination())
-#model.runNarration(False, NarrativeState(context))
-model.drawNarrationGraph(show_state=False, show_choices=True)
+model.validateAssertions(assertions=assertions)
+print("TERMINABLE:", model.hasAbsoluteTermination())
+model.runNarration(False, NarrativeState(context))
+# model.drawNarrationGraph(show_state=False, show_choices=True)

@@ -8,7 +8,7 @@ from typing import List, Dict, Set
 import networkx as nx
 import matplotlib.pyplot as plt
 from networkx import DiGraph
-
+import mplcursors
 
 NULL_STRING: string = "NULL"
 CLASS_TYPE: string = "class_type"
@@ -422,12 +422,10 @@ class NarrationSetting(object):
     def __init__(self,
                  initial_states: Set[NarrativeState],
                  choices: Set[NarrativeChoice],
-                 termination_conditions: Set[FunctionType],
-                 assertions: Set[NarrativeAssertion]):
+                 termination_conditions: Set[FunctionType]):
         self.initialStates: Set[NarrativeState] = initial_states
         self.choices: Set[NarrativeChoice] = choices
         self.terminationConditions: Set[FunctionType] = termination_conditions
-        self.assertions: Set[NarrativeAssertion] = assertions
 
     def __str__(self):
         return "[" + str(self.initialStates) + "," + str(self.choices) + "," + str(self.terminationConditions) + "]"
@@ -436,7 +434,7 @@ class NarrationSetting(object):
         return str(self)
 
     def __hash__(self):
-        return hash(self.initialStates) + hash(self.choices) + hash(self.terminationConditions) + hash(self.assertions)
+        return hash(self.initialStates) + hash(self.choices) + hash(self.terminationConditions)
 
     def __eq__(self, other):
         if not isinstance(other, NarrationSetting):
@@ -444,8 +442,7 @@ class NarrationSetting(object):
         else:
             return self.initialStates == other.initialStates and \
                    self.choices == other.choices and \
-                   self.terminationConditions == other.terminationConditions and \
-                   self.assertions == other.assertions
+                   self.terminationConditions == other.terminationConditions
 
 
 class NarrativeModel(object):
@@ -455,7 +452,6 @@ class NarrativeModel(object):
                  termination_conditions: Set[FunctionType],
                  choices: Set[NarrativeChoice],
                  event_set: EventSet,
-                 assertions: Set[NarrativeAssertion],
                  narrative_graph: DiGraph):
 
         self._initialWorldStates: Set[NarrativeState] = set(deepcopy(initial_states))
@@ -465,7 +461,6 @@ class NarrativeModel(object):
         self._dead_ends: Set[NarrativeState] = self._findDeadEnds()
         self._terminationConditions: Set[FunctionType] = termination_conditions
         self._eventSet: EventSet = event_set
-        self._assertions: Set[NarrativeAssertion] = assertions
 
     def __hash__(self):
         return hash(self._initialWorldStates) + \
@@ -499,7 +494,8 @@ class NarrativeModel(object):
         while len(getPossibleChoices(current_state, choices)) > 0 and not (current_state in self._terminationStates):
             current_state = interactiveStep(show_state, current_state, choices)
 
-    def drawNarrationGraph(self, show_state: bool, show_choices: bool):
+    def drawNarrationGraph(self, show_state: bool, show_choices: bool, show_plot: bool = True,
+                           rotate_labels: bool = False):
         # --------------
         # Draw the graph
 
@@ -522,7 +518,23 @@ class NarrativeModel(object):
             else:
                 colors.append(other_color)
 
-        pos = nx.planar_layout(self._narrativeGraph)
+        G = self._narrativeGraph
+        starts = deepcopy(self._initialWorldStates)
+        start_node = starts.pop()
+        shortest_paths = nx.single_source_shortest_path_length(G, start_node)
+
+        groups = {}
+        for node, distance in shortest_paths.items():
+            if distance not in groups:
+                groups[distance] = []
+            groups[distance].append(node)
+
+        pos = {}
+        for i, layer in groups.items():
+            for j, node in enumerate(layer):
+                pos[node] = (i, (j - len(layer) * 0.5))
+
+        # pos = nx.planar_layout(self._narrativeGraph)
         nx.draw(self._narrativeGraph,
                 pos=pos,
                 with_labels=show_state,
@@ -534,24 +546,107 @@ class NarrativeModel(object):
                 node_shape='o')
 
         if show_choices:
+            edge_labels = {(u, v): d['choices'] for u, v, d in G.edges(data=True)}
             nx.draw_networkx_edge_labels(self._narrativeGraph,
                                          pos=pos,
                                          font_size=8,
                                          font_color='k',
-                                         rotate=False)
-        plt.show()
+                                         rotate=rotate_labels,
+                                         edge_labels=edge_labels)
 
-    def validateAssertions(self):
+        if show_plot:
+            plt.show()
+
+    def drawNarrationGraphWithHighlights(self, show_state: bool, show_choices: bool, show_plot: bool = True,
+                                         rotate_labels: bool = False, highlight_states=None):
+        # --------------
+        # Draw the graph
+
+        if highlight_states is None:
+            highlight_states = []
+
+        node_size = 100
+
+        highlight_color = (1, 0, 0, 1)
+        other_color = (0, 0, 0, 0.33)
+
+        colors = list()
+        node_sizes = list()
+        edge_colors = list()
+        for node in self._narrativeGraph.nodes:
+            if node in highlight_states:
+                colors.append(highlight_color)
+                node_sizes.append(node_size * 2)
+            else:
+                colors.append(other_color)
+                node_sizes.append(node_size)
+
+        for edge in self._narrativeGraph.edges:
+            if edge[0] in highlight_states and edge[1] in highlight_states:
+                edge_colors.append(highlight_color)
+            else:
+                edge_colors.append(other_color)
+
+        G = self._narrativeGraph
+        starts = deepcopy(self._initialWorldStates)
+        start_node = starts.pop()
+        shortest_paths = nx.single_source_shortest_path_length(G, start_node)
+
+        groups = {}
+        for node, distance in shortest_paths.items():
+            if distance not in groups:
+                groups[distance] = []
+            groups[distance].append(node)
+
+        pos = {}
+        for i, layer in groups.items():
+            for j, node in enumerate(layer):
+                pos[node] = (i, (j - len(layer) * 0.5))
+
+        # pos = nx.planar_layout(self._narrativeGraph)
+        nx.draw(self._narrativeGraph,
+                pos=pos,
+                with_labels=show_state,
+                font_weight='normal',
+                font_size='8',
+                font_color=(0, 0, 0, 1),
+                node_size=node_sizes,
+                node_color=colors,
+                node_shape='o',
+                edge_color=edge_colors,
+                width=3.0)
+
+        if show_choices:
+            edge_labels = {(u, v): d['choices'] for u, v, d in G.edges(data=True)}
+            nx.draw_networkx_edge_labels(self._narrativeGraph,
+                                         pos=pos,
+                                         font_size=8,
+                                         font_color='k',
+                                         rotate=rotate_labels,
+                                         edge_labels=edge_labels,
+                                         label_pos=0.5)
+
+        if show_plot:
+            plt.show()
+
+    def validateAssertions(self, assertions: Set[NarrativeAssertion], print_results: bool = True):
+        results = []
         print("=== STARTING ASSERTION CHECKING ===")
         i = 0
-        for a in self._assertions:
+        for a in assertions:
             i = i + 1
             if a.assertionFunc(self):
                 sat = "PASS"
             else:
                 sat = "FAIL"
-            print("[" + str(i) + "] " + a.friendlyName + ": " + sat)
+
+            result = "[" + str(i) + "] " + a.friendlyName + ": " + sat
+            results.append(result)
+            if print_results:
+                print(result)
+
         print("=== ASSERTION CHECKING COMPLETED ===")
+        return results
 
     @property
     def narrativeGraph(self):
@@ -659,7 +754,8 @@ def simulateFrom(root_world_state: NarrativeState,
             eventSet.add(NarrativeEvent(root_world_state, child_world_state, ch))
 
 
-def generateNarrativeModel(setting: NarrationSetting, max_depth: int = math.inf, printProcess : bool = True) -> NarrativeModel:
+def generateNarrativeModel(setting: NarrationSetting, max_depth: int = math.inf,
+                           printProcess: bool = True) -> NarrativeModel:
     if printProcess:
         print("=== MODEL GENERATION STARTED ===")
     narrativeGraph: DiGraph = nx.DiGraph()
@@ -697,12 +793,11 @@ def generateNarrativeModel(setting: NarrationSetting, max_depth: int = math.inf,
     if printProcess:
         print("=== MODEL GENERATION ENDED ===")
 
-    return NarrativeModel(deepcopy(valid_roots),
+    return NarrativeModel(deepcopy(set(valid_roots)),
                           terminationStates,
                           deepcopy(setting.terminationConditions),
                           deepcopy(setting.choices),
                           eventSet,
-                          setting.assertions,
                           narrativeGraph)
 
 
@@ -713,8 +808,7 @@ def subModelFrom(states: StateSet, narration: NarrativeModel) -> NarrativeModel:
     termination_conditions = deepcopy(narration.terminationConditions)
     return generateNarrativeModel(NarrationSetting(initial_states=states,
                                                    choices=choices,
-                                                   termination_conditions=termination_conditions,
-                                                   assertions=narration.assertions),
+                                                   termination_conditions=termination_conditions),
                                   math.inf,
                                   False)
 

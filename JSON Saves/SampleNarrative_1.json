@@ -1,0 +1,249 @@
+{
+    "constants": {
+        "0": {
+            "name": "org_none",
+            "value": "\"organization is None\""
+        },
+        "1": {
+            "name": "org_order",
+            "value": "\"organization is Order\""
+        },
+        "2": {
+            "name": "org_army",
+            "value": "\"organization is Army\""
+        },
+        "3": {
+            "name": "org_clan",
+            "value": "\"organization is Clan\""
+        },
+        "4": {
+            "name": "status_anarchy",
+            "value": "\"world in anarchy\""
+        },
+        "5": {
+            "name": "status_tyranny",
+            "value": "\"world in Tyranny\""
+        },
+        "6": {
+            "name": "status_freedom",
+            "value": "\"world is Free\""
+        },
+        "7": {
+            "name": "status_none",
+            "value": "\"None Status\""
+        }
+    },
+    "value_sets": {},
+    "classes": {
+        "0": {
+            "name": "class_character",
+            "parent": "",
+            "imp": "\"IS_ALIVE\":bool=True"
+        },
+        "1": {
+            "name": "class_player",
+            "parent": "class_character",
+            "imp": "\"ALLIANCE\":str=org_none"
+        },
+        "2": {
+            "name": "class_world",
+            "parent": "",
+            "imp": "\"STATUS\":str=status_none"
+        }
+    },
+    "context_entities": {
+        "0": {
+            "name": "\"PLAYER\"",
+            "value": "class_player"
+        },
+        "1": {
+            "name": "\"PRECEPTOR\"",
+            "value": "class_character"
+        },
+        "2": {
+            "name": "\"GENERAL\"",
+            "value": "class_character"
+        },
+        "3": {
+            "name": "\"WORLD\"",
+            "value": "class_world"
+        }
+    },
+    "filters": {
+        "0": {
+            "name": "no_alliance",
+            "imp": "s.getValue(\"PLAYER\", \"ALLIANCE\") == org_none"
+        },
+        "1": {
+            "name": "member_of_army",
+            "imp": "s.getValue(\"PLAYER\", \"ALLIANCE\") == org_army"
+        },
+        "2": {
+            "name": "member_of_clan",
+            "imp": "s.getValue(\"PLAYER\", \"ALLIANCE\") == org_clan"
+        },
+        "3": {
+            "name": "can_fight_army",
+            "imp": "s.getValue(\"PLAYER\", \"ALLIANCE\") in {org_order, org_clan} and \\\ns.getValue(\"GENERAL\", \"IS_ALIVE\")"
+        },
+        "4": {
+            "name": "can_fight_clan",
+            "imp": "s.getValue(\"PLAYER\", \"ALLIANCE\") in {org_order, org_army} and \\\ns.getValue(\"PRECEPTOR\", \"IS_ALIVE\")"
+        },
+        "5": {
+            "name": "is_anarchy_possible",
+            "imp": "s.getValue(\"PLAYER\", \"ALLIANCE\") in {org_order, org_clan} and \\\nnot s.getValue(\"GENERAL\", \"IS_ALIVE\")"
+        },
+        "6": {
+            "name": "is_tyranny_possible",
+            "imp": "s.getValue(\"PLAYER\", \"ALLIANCE\") in {org_order, org_army} and \\\nnot s.getValue(\"PRECEPTOR\", \"IS_ALIVE\")"
+        },
+        "7": {
+            "name": "is_freedom_possible",
+            "imp": "s.getValue(\"PLAYER\", \"ALLIANCE\") == org_order and \\\nnot s.getValue(\"PRECEPTOR\", \"IS_ALIVE\") and \\\nnot s.getValue(\"GENERAL\", \"IS_ALIVE\")"
+        },
+        "8": {
+            "name": "terminationCondition",
+            "imp": "s.getValue(\"WORLD\", \"STATUS\") != status_none"
+        }
+    },
+    "transforms": {
+        "0": {
+            "name": "join_army",
+            "imp": "s.setValue(\"PLAYER\", \"ALLIANCE\", org_army)"
+        },
+        "1": {
+            "name": "join_clan",
+            "imp": "s.setValue(\"PLAYER\", \"ALLIANCE\", org_clan)"
+        },
+        "2": {
+            "name": "establish_order",
+            "imp": "s.setValue(\"PLAYER\", \"ALLIANCE\", org_order)"
+        },
+        "3": {
+            "name": "defeat_general",
+            "imp": "s.setValue(\"GENERAL\", \"IS_ALIVE\", False)"
+        },
+        "4": {
+            "name": "defeat_preceptor",
+            "imp": "s.setValue(\"PRECEPTOR\", \"IS_ALIVE\", False)"
+        },
+        "5": {
+            "name": "make_anarchy",
+            "imp": "s.setValue(\"WORLD\", \"STATUS\", status_anarchy)"
+        },
+        "6": {
+            "name": "make_tyranny",
+            "imp": "s.setValue(\"WORLD\", \"STATUS\", status_tyranny)"
+        },
+        "7": {
+            "name": "make_democracy",
+            "imp": "s.setValue(\"WORLD\", \"STATUS\", status_freedom)"
+        }
+    },
+    "choice_def": {
+        "0": {
+            "name": "choice_join_army",
+            "filter": "no_alliance",
+            "transform": "join_army",
+            "friendlyName": "JOIN ARMY"
+        },
+        "1": {
+            "name": "choice_join_clan",
+            "filter": "no_alliance",
+            "transform": "join_clan",
+            "friendlyName": "JOIN CLAN"
+        },
+        "2": {
+            "name": "choice_defeat_general",
+            "filter": "can_fight_army",
+            "transform": "defeat_general",
+            "friendlyName": "FIGHT ARMY"
+        },
+        "3": {
+            "name": "choice_defeat_preceptor",
+            "filter": "can_fight_clan",
+            "transform": "defeat_preceptor",
+            "friendlyName": "FIGHT CLAN"
+        },
+        "4": {
+            "name": "choice_betray_clan",
+            "filter": "member_of_clan",
+            "transform": "establish_order",
+            "friendlyName": "BETRAY CLAN"
+        },
+        "5": {
+            "name": "choice_betray_army",
+            "filter": "member_of_army",
+            "transform": "establish_order",
+            "friendlyName": "BETRAY ARMY"
+        },
+        "6": {
+            "name": "choice_make_anarchy",
+            "filter": "is_anarchy_possible",
+            "transform": "make_anarchy",
+            "friendlyName": "ANARCHY"
+        },
+        "7": {
+            "name": "choice_make_tyranny",
+            "filter": "is_tyranny_possible",
+            "transform": "make_tyranny",
+            "friendlyName": "TYRANNY"
+        },
+        "8": {
+            "name": "choice_make_democracy",
+            "filter": "is_freedom_possible",
+            "transform": "make_democracy",
+            "friendlyName": "FREEDOM"
+        }
+    },
+    "terminations": {
+        "0": {
+            "value": "terminationCondition"
+        }
+    },
+    "model_choices": {
+        "0": {
+            "value": "choice_join_army"
+        },
+        "1": {
+            "value": "choice_join_clan"
+        },
+        "2": {
+            "value": "choice_defeat_general"
+        },
+        "3": {
+            "value": "choice_defeat_preceptor"
+        },
+        "4": {
+            "value": "choice_make_anarchy"
+        },
+        "5": {
+            "value": "choice_make_tyranny"
+        },
+        "6": {
+            "value": "choice_betray_clan"
+        },
+        "7": {
+            "value": "choice_betray_army"
+        },
+        "8": {
+            "value": "choice_make_democracy"
+        }
+    },
+    "assertions": {
+        "0": {
+            "name": "Possible to defeat the general even if the player joined the army at first",
+            "imp": "lambda model:\nchoice_defeat_general in choicesOf(\n    subModelFrom(\n        postStatesOf(\n            filterEventsByChoice(\n                {choice_join_army},\n                eventsIn(model)\n            )\n        ),\n        model\n    )\n)"
+        },
+        "1": {
+            "name": "Possible to end with anarchy even if the player chose to betray the clan",
+            "imp": "lambda model:\nlen(filterStates(\n        lambda s: s.getValue(\"WORLD\", \"STATUS\") == status_anarchy,\n        statesOf(\n            subModelFrom(\n                postStatesOf(\n                    filterEventsByChoice(\n                        {choice_betray_clan},\n                        eventsIn(model)\n                    )\n                ),\n                model\n            )\n        )\n    )\n) != 0"
+        },
+        "2": {
+            "name": "Impossible to defeat the general if the player is still allied with the army",
+            "imp": "lambda model:\nlen(filterStates(\n        lambda s: s.getValue(\"PLAYER\", \"ALLIANCE\") == org_army,\n        statesOf(\n            preStatesOf(\n                filterEventsByChoice(\n                    {choice_defeat_general},\n                    eventsIn(model)\n                )\n            )\n        )\n    )\n) == 0"
+        }
+    },
+    "queries": {}
+}

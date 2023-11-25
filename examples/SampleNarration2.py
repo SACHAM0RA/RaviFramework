@@ -1,7 +1,7 @@
 from ravi.Ravi import *
 
-wood_from_every_tree = 1
-metal_from_every_mine = 1
+wood_from_every_tree = 7
+metal_from_every_mine = 5
 
 wood_for_bow = 2
 metal_for_bow = 1
@@ -111,20 +111,20 @@ def make_sword(s: NarrativeState) -> NarrativeState:
 
 
 ch_cut_tree = NarrativeChoice(can_cut_tree, cut_tree,
-                              "CUT A TREE TO GET +%d WOOD (%d DAYS)" \
-                              % (wood_from_every_tree, tree_cutting_duration))
+                              "CUT A TREE TO GET +%d WOOD (%d DAYS)" % (wood_from_every_tree, tree_cutting_duration)
+                              )
 
 ch_dig_mine = NarrativeChoice(can_dig_mine, dig_mine,
-                              "DIG A MINE TO GET +%d METAL (%d DAYS)" \
-                              % (metal_from_every_mine, mine_digging_duration))
+                              "DIG A MINE TO GET +%d METAL (%d DAYS)" % (metal_from_every_mine, mine_digging_duration)
+                              )
 
 ch_make_bow = NarrativeChoice(can_make_bow, make_bow,
-                              "SPEND %d WOOD and %d METAL TO MAKE A BOW (%d DAYS)" \
-                              % (wood_for_bow, metal_for_bow, bow_making_duration))
+                              "SPEND %d WOOD and %d METAL TO MAKE A BOW (%d DAYS)" % (wood_for_bow, metal_for_bow, bow_making_duration)
+                              )
 
 ch_make_sword = NarrativeChoice(can_make_sword, make_sword,
-                                "SPEND %d WOOD and %d METAL TO MAKE A SWORD (%d DAYS)" \
-                                % (wood_for_sword, metal_for_sword, sword_making_duration))
+                                "SPEND %d WOOD and %d METAL TO MAKE A SWORD (%d DAYS)" % (wood_for_sword, metal_for_sword, sword_making_duration)
+                                )
 
 # =================================================== Assertions =======================================================
 
@@ -141,6 +141,7 @@ assertion_2 = NarrativeAssertion(
                                statesOf(m)))
               == 0
 )
+
 
 def calculate_success_Ratio(model: NarrativeModel) -> float:
     successPathCount = len(pathsFromTo(model,
@@ -177,19 +178,18 @@ def successCondition(s: NarrativeState) -> bool:
 
 initial_states = {NarrativeState(context)}
 term_conditions = {failCondition, successCondition}
-choices = [ch_cut_tree, ch_dig_mine,ch_make_bow, ch_make_sword]
+choices = [ch_cut_tree, ch_dig_mine, ch_make_bow, ch_make_sword]
 assertions = [assertion_1, assertion_2, assertion_3]
 settings: NarrationSetting = NarrationSetting(initial_states=initial_states,
                                               termination_conditions=term_conditions,
-                                              choices=choices,
-                                              assertions=assertions)
+                                              choices=choices)
 
 model: NarrativeModel = generateNarrativeModel(setting=settings, max_depth=math.inf)
 
 # ======================================== Narration Generation and Proof Checking =====================================
 
-model.validateAssertions()
+model.validateAssertions(assertions=assertions)
 print("SUCCESS RATIO: ", calculate_success_Ratio(model))
-print("TERMINABLE:", model.hasAbsoluteTermination())
-model.runNarration(True, NarrativeState(context))
+# print("TERMINABLE:", model.hasAbsoluteTermination())
+# model.runNarration(True, NarrativeState(context))
 #model.drawNarrationGraph(show_state=False, show_choices=True)
