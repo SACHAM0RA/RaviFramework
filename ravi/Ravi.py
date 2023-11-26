@@ -8,7 +8,6 @@ from typing import List, Dict, Set
 import networkx as nx
 import matplotlib.pyplot as plt
 from networkx import DiGraph
-import mplcursors
 
 NULL_STRING: string = "NULL"
 CLASS_TYPE: string = "class_type"
