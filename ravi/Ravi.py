@@ -1040,8 +1040,11 @@ def generateSparseLayoutForModel(model: NarrativeModel, locationMappings):
         layoutGraph.add_node(location)
 
     i = 0
-    while not nx.is_connected(layoutGraph):
+    while not nx.is_connected(layoutGraph) and i < len(neighbours):
         layoutGraph.add_edge(neighbours[i][0], neighbours[i][1])
+        is_planar, embedding = nx.check_planarity(layoutGraph)
+        if not is_planar:
+            layoutGraph.remove_edge(neighbours[i][0], neighbours[i][1])
         i = i + 1
 
     return layoutGraph
@@ -1061,8 +1064,10 @@ def generateHighConnectivityLayoutForModel(model: NarrativeModel, locationMappin
 
     i = len(neighbours) - 1
     is_planar, embedding = nx.check_planarity(layoutGraph)
-    while not is_planar:
+    while not is_planar and i >= 0:
         layoutGraph.remove_edge(neighbours[i][0], neighbours[i][1])
+        if not nx.is_connected(layoutGraph):
+            layoutGraph.add_edge(neighbours[i][0], neighbours[i][1])
         is_planar, embedding = nx.check_planarity(layoutGraph)
         i = i - 1
 
