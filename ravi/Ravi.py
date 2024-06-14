@@ -7,7 +7,6 @@ import inspect
 from typing import List, Dict, Set
 import networkx as nx
 import matplotlib.pyplot as plt
-from networkx import DiGraph
 
 NULL_STRING: string = "NULL"
 CLASS_TYPE: string = "class_type"
@@ -451,12 +450,12 @@ class NarrativeModel(object):
                  termination_conditions: Set[FunctionType],
                  choices: Set[NarrativeChoice],
                  event_set: EventSet,
-                 narrative_graph: DiGraph):
+                 narrative_graph: nx.DiGraph):
 
         self._initialWorldStates: Set[NarrativeState] = set(deepcopy(initial_states))
         self._terminationStates: Set[NarrativeState] = set(deepcopy(termination_states))
         self._choices: Set[NarrativeChoice] = choices
-        self._narrativeGraph: DiGraph = narrative_graph
+        self._narrativeGraph: nx.DiGraph = narrative_graph
         self._dead_ends: Set[NarrativeState] = self._findDeadEnds()
         self._terminationConditions: Set[FunctionType] = termination_conditions
         self._eventSet: EventSet = event_set
@@ -723,7 +722,7 @@ def simulateFrom(root_world_state: NarrativeState,
                  choices: Set[NarrativeChoice],
                  term_conditions: Set[FunctionType],
                  eventSet: EventSet,
-                 graph: DiGraph,
+                 graph: nx.DiGraph,
                  current_depth: int,
                  max_depth: int):
     possibleChoices = getPossibleChoices(root_world_state, choices)
@@ -757,7 +756,7 @@ def generateNarrativeModel(setting: NarrationSetting, max_depth: int = math.inf,
                            printProcess: bool = True) -> NarrativeModel:
     if printProcess:
         print("=== MODEL GENERATION STARTED ===")
-    narrativeGraph: DiGraph = nx.DiGraph()
+    narrativeGraph: nx.DiGraph = nx.DiGraph()
 
     def passesAnyTerminationConditions(state) -> bool:
         for cond in setting.terminationConditions:
@@ -890,7 +889,7 @@ def filterEventsByPreStates(filter_func: FunctionType, event_set: EventSet) -> E
     return to_ret
 
 
-def ConvertGraphPathToNarrativePath(path, graph: DiGraph) -> PathSet:
+def ConvertGraphPathToNarrativePath(path, graph: nx.DiGraph) -> PathSet:
     states: List[NarrativeState] = []
     choiceListOfLists: List[List[NarrativeChoice]] = []
 
@@ -979,3 +978,111 @@ def contains(to_contain: object, container: object) -> bool:
         return False
     else:
         return False
+
+
+# ================================================== Layout Generation =================================================
+
+def ProcessPossibleNeighboursForModel(model: NarrativeModel, locationMappings: Dict) -> List:
+    SpatialDependencyGraph = model.narrativeGraph.copy()
+
+    for u in SpatialDependencyGraph.nodes:
+        for v in SpatialDependencyGraph.nodes:
+            if SpatialDependencyGraph.has_edge(u, v):
+                choices_to_change = SpatialDependencyGraph[u][v]["choices"]
+                if choices_to_change is not None:
+                    for choice in locationMappings.keys():
+                        if choice in choices_to_change:
+                            try:
+                                SpatialDependencyGraph[u][v]["locations"].add(locationMappings[choice])
+                            except:
+                                SpatialDependencyGraph[u][v]["locations"]: Set = {locationMappings[choice]}
+
+    LocationSet = set(locationMappings.values())
+
+    depth = {}
+    frequencies = {}
+
+    processed = []
+    for l_1 in LocationSet:
+        for l_2 in LocationSet:
+            if l_1 != l_2:
+                if (l_1, l_2) not in processed and (l_2, l_1) not in processed:
+                    possible_neighbour = (l_1, l_2)
+                    frequencies[possible_neighbour] = 0
+                    depth[possible_neighbour] = -1
+                    processed.append(possible_neighbour)
+
+                    for n in SpatialDependencyGraph.nodes:
+                        for n_in in SpatialDependencyGraph.predecessors(n):
+                            for n_out in SpatialDependencyGraph.successors(n):
+                                locationTags_in = SpatialDependencyGraph[n_in][n]["locations"]
+                                locationTags_out = SpatialDependencyGraph[n][n_out]["locations"]
+                                if (l_1 in locationTags_in and l_2 in locationTags_out) or (
+                                        l_2 in locationTags_in and l_1 in locationTags_out):
+
+                                    frequencies[possible_neighbour] = frequencies[possible_neighbour] + 1
+
+                                    for initial in model.initialStates:
+                                        length = nx.shortest_path_length(SpatialDependencyGraph, initial, n)
+                                        if depth[possible_neighbour] > length or depth[possible_neighbour] == -1:
+                                            depth[possible_neighbour] = length
+
+    sorted_neighbours = sorted(processed, key=lambda x: (frequencies[x], depth[x]), reverse=True)
+    return sorted_neighbours
+
+
+def generateSparseLayoutForModel(model: NarrativeModel, locationMappings):
+    neighbours = ProcessPossibleNeighboursForModel(model, locationMappings)
+    layoutGraph: nx.Graph = nx.Graph()
+
+    locationSet: Set = set(locationMappings.values())
+    for location in locationSet:
+        layoutGraph.add_node(location)
+
+    i = 0
+    while not nx.is_connected(layoutGraph):
+        layoutGraph.add_edge(neighbours[i][0], neighbours[i][1])
+        i = i + 1
+
+    return layoutGraph
+
+
+def generateHighConnectivityLayoutForModel(model: NarrativeModel, locationMappings):
+    neighbours = ProcessPossibleNeighboursForModel(model, locationMappings)
+    layoutGraph: nx.Graph = nx.Graph()
+
+    locationSet: Set = set(locationMappings.values())
+    for location in locationSet:
+        layoutGraph.add_node(location)
+
+    for a in locationSet:
+        for b in locationSet:
+            layoutGraph.add_edge(a, b)
+
+    i = len(neighbours) - 1
+    is_planar, embedding = nx.check_planarity(layoutGraph)
+    while not is_planar:
+        layoutGraph.remove_edge(neighbours[i][0], neighbours[i][1])
+        is_planar, embedding = nx.check_planarity(layoutGraph)
+        i = i - 1
+
+    return layoutGraph
+
+
+def drawLayoutGraph(layoutGraph):
+    size = 200
+    alpha = 1
+    color = (0, 0, 0, alpha)
+
+    pos = nx.planar_layout(layoutGraph)
+    nx.draw(layoutGraph,
+            pos=pos,
+            with_labels=True,
+            font_weight='bold',
+            font_size='12',
+            font_color=(0, 0, 0, 1),
+            node_size=size,
+            node_shape='o',
+            node_color='w')
+
+    plt.show()
