@@ -237,10 +237,10 @@ model: NarrativeModel = generateNarrativeModel(setting=settings)
 
 # ======================================== Narration Generation and Proof Checking =====================================
 
-# model.validateAssertions(assertions=assertions)
-# print("TERMINABLE:", model.hasAbsoluteTermination())
+model.validateAssertions(assertions=assertions)
+print("TERMINABLE:", model.hasAbsoluteTermination())
 # model.runNarration(False, NarrativeState(context))
-# model.drawNarrationGraph(show_state=False, show_choices=True)
+model.drawNarrationGraph(show_state=False, show_choices=True)
 
 LocationMappings = {choice_join_army: "MOUNTAINS",
                     choice_join_clan: "JUNGLE",
