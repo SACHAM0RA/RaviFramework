@@ -803,8 +803,9 @@ def generateNarrativeModel(setting: NarrationSetting, max_depth: int = math.inf,
 
 def subModelFrom(states: StateSet, narration: NarrativeModel) -> NarrativeModel:
     choices = deepcopy(narration.choices)
+    initial_states = deepcopy(states)
     termination_conditions = deepcopy(narration.terminationConditions)
-    return generateNarrativeModel(NarrationSetting(initial_states=states,
+    return generateNarrativeModel(NarrationSetting(initial_states=initial_states,
                                                    choices=choices,
                                                    termination_conditions=termination_conditions),
                                   math.inf,
@@ -1060,7 +1061,8 @@ def generateHighConnectivityLayoutForModel(model: NarrativeModel, locationMappin
 
     for a in locationSet:
         for b in locationSet:
-            layoutGraph.add_edge(a, b)
+            if a != b:
+                layoutGraph.add_edge(a, b)
 
     i = len(neighbours) - 1
     is_planar, embedding = nx.check_planarity(layoutGraph)

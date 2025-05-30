@@ -221,26 +221,34 @@ def terminationCondition(s: NarrativeState) -> bool:
 
 initial_states = {NarrativeState(context)}
 term_conditions = {terminationCondition}
-choices = \
-    [
-        choice_join_army, choice_join_clan, choice_defeat_general,
-        choice_defeat_preceptor, choice_make_anarchy, choice_make_tyranny,
-        choice_betray_clan, choice_betray_army, choice_make_democracy
-    ]
+choices = [
+    choice_join_army,
+    choice_join_clan,
+    choice_defeat_general,
+    choice_defeat_preceptor,
+    choice_make_anarchy,
+    choice_make_tyranny,
+    choice_betray_clan,
+    choice_betray_army,
+    choice_make_democracy
+]
+
 assertions = [assertion_1, assertion_2, assertion_3]
 
 settings: NarrationSetting = NarrationSetting(initial_states=initial_states,
                                               termination_conditions=term_conditions,
                                               choices=choices)
 
-model: NarrativeModel = generateNarrativeModel(setting=settings)
-
 # ======================================== Narration Generation and Proof Checking =====================================
+
+model: NarrativeModel = generateNarrativeModel(setting=settings)
 
 model.validateAssertions(assertions=assertions)
 print("TERMINABLE:", model.hasAbsoluteTermination())
 # model.runNarration(False, NarrativeState(context))
 model.drawNarrationGraph(show_state=False, show_choices=True)
+
+# ================================================== Map layout Generation =============================================
 
 LocationMappings = {choice_join_army: "MOUNTAINS",
                     choice_join_clan: "JUNGLE",
